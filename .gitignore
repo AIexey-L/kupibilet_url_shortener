@@ -48,3 +48,12 @@ phraseapp
 /config/environments/development.rb
 
 #config/locales/*
+
+*~
+\#*\#
+/.emacs.desktop
+/.emacs.desktop.lock
+*.elc
+auto-save-list
+tramp
+.\#*
