@@ -12,24 +12,24 @@ class Shortener
 
   private
 
-  # def self.return_short_url(normal_url, connection, id)
-  #   # Check if long url already exists in redis, form and return
-  #   # corresponding short link
-  #   connection.exists(normal_url).callback do |key|
-  #     binding.pry
-  #     if key == 1
-  #       connection.get(normal_url).callback do |existid|
-  #         binding.pry
-  #         short_url(existid)
-  #         yield if block_given?
-  #       end
-  #     else
-  #       binding.pry
-  #         connection.set(normal_url, id)
-  #         short_url(id)
-  #     end
-  #   end
-  # end
+  def self.return_short_url(normal_url, connection, id)
+    # Check if long url already exists in redis, form and return
+    # corresponding short link
+    connection.exists(normal_url).callback do |key|
+      binding.pry
+      if key == 1
+        connection.get(normal_url).callback do |existid|
+          binding.pry
+          short_url(existid)
+          yield if block_given?
+        end
+      else
+        binding.pry
+          connection.set(normal_url, id)
+          short_url(id)
+      end
+    end
+  end
 
 
   def self.return_short_url(normal_url, connection, id)

@@ -57,7 +57,8 @@ class ShortenApp < Sinatra::Base
     #binding.pry
     content_type :json
     response = if aparams[:longUrl]
-                 Shortener.call(aparams[:longUrl], @connection, @id)
+                 response = RedisHandler.new(@connection, @id)
+                 response.return_short_url(aparams[:longUrl])
                else
                  { message: 'url is missing'}
                end
@@ -74,7 +75,7 @@ class ShortenApp < Sinatra::Base
   private
 
   def redis_initialize
-    @connection ||= RedisRepo.new.redis_server
+    @redis_server ||= RedisRepo.new.redis_server
   end
 
   def generate_key
