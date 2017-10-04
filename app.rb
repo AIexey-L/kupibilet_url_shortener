@@ -50,7 +50,7 @@ class ShortenApp < Sinatra::Base
   apost '/' do
     redis_initialize
     content_type :json
-    response = if aparams[:longUrl] && aparams[:longUrl].valid_url?
+    response = if aparams[:longUrl] && valid_url?(aparams[:longUrl])
                  return_short_url(aparams[:longUrl])
                else
                  { message: 'url is missing'}
