@@ -4,10 +4,11 @@ require 'eventmachine'
 require 'em-hiredis'
 require 'thin'
 require 'sinatra/base'
-require './services/shortener'
 require 'pry'
-require 'yab62' # https://github.com/siong1987/yab62
+require './lib/em-synchrony' # https://github.com/igrigorik/em-synchrony
+require './services/shorter'
 require './services/redisrepo'
+require 'digest'
 
 def run(opts)
   EM.run do
@@ -20,11 +21,6 @@ def run(opts)
     unless ['thin', 'hatetepe', 'goliath'].include? server
       raise "Need an EM webserver, but #{server} isn't"
     end
-
-    # Starts em-hiredis in context of eventmachine.
-    # @redis_server should be available inside webserver, inside
-    # ShortenApp instance.
-    @redis_server = EM::Hiredis.connect("redis://127.0.0.1:6379")
 
     dispatch = Rack::Builder.app do
       map '/' do
@@ -53,34 +49,52 @@ class ShortenApp < Sinatra::Base
   # Uses sinatra/async
   apost '/' do
     redis_initialize
-    generate_key
-    #binding.pry
     content_type :json
-    response = if aparams[:longUrl]
-                 response = RedisHandler.new(@connection, @id)
-                 response.return_short_url(aparams[:longUrl])
+    response = if aparams[:longUrl] && aparams[:longUrl].valid_url?
+                 return_short_url(aparams[:longUrl])
                else
                  { message: 'url is missing'}
                end
     body response.to_json
   end
 
+  # When we have to get url form redis,
+  # async flow pauses for current fiber for redis request,
+  # other fibers remain async.
   aget '/:url' do
     redis_initialize
-    aparams[:url] ? key = aparams[:url].decode62 : { message: 'url is missing'}
-    @connection.get(key).callback { |long_url| long_url }
-    status 301
+    EM.synchrony do
+      if aparams[:url]
+        shorty = Shorter.assemble_short_url(aparams[:url])
+        response = EM::Synchrony.sync @redis_server.get(shorty)
+        headers 'Location' => response
+        status 301
+        body
+      else
+        response = { message: 'url is missing'}
+        body response.to_json
+        status 404
+      end
+    end
   end
 
   private
 
+  # Initializes redis first time by any request,
+  # keeps one connection per fiber
   def redis_initialize
     @redis_server ||= RedisRepo.new.redis_server
   end
 
-  def generate_key
-    @id ||= 1_000_000_000_000
-    @id += 1
+  def return_short_url(long_url)
+    shorty = Shorter.make_short_url(long_url)
+    @redis_server.set(long_url, shorty)
+    @redis_server.set(shorty, long_url)
+    { url: shorty }
+  end
+
+  def valid_url?(url)
+    url =~ URI::regexp
   end
 end
 
