@@ -5,19 +5,21 @@ require 'em-hiredis'
 require 'thin'
 require 'sinatra/base'
 require 'pry'
-require './lib/em-synchrony' # https://github.com/igrigorik/em-synchrony
+require 'em-synchrony'
 require './services/shorter'
 require 'digest'
-#require 'config'
+require 'config'
+
+set :root, File.dirname(__FILE__)
 
 def run(opts)
-  #Config.load_and_set settings("./config/config.yml")
   EM.run do
-    # define some defaults for our app
-    server  = opts[:server] || 'thin'
-    host    = opts[:host]   || '127.0.0.1'
-    port    = opts[:port]   || '8181'
-    web_app = opts[:app]
+    # define some defaults for our app in config.yml
+    config = Settings.webserver_config
+    server  = opts[:server] || config.server
+    host    = opts[:host]   || config.host
+    port    = opts[:port]   || config.port
+    web_app = opts[:app]    || config.web_app
 
     unless ['thin', 'hatetepe', 'goliath'].include? server
       raise "Need an EM webserver, but #{server} isn't"
@@ -42,8 +44,8 @@ end
 
 class ShortenApp < Sinatra::Base
   register Sinatra::Async
-  #register Config
-  set :root, File.dirname(__FILE__)
+  register Config
+  Config.load_and_set_settings("./config/config.yml")
   configure do
     # threaded - False: Will take requests on the reactor thread
     set :threaded, false
@@ -88,7 +90,8 @@ class ShortenApp < Sinatra::Base
   # Initializes redis first time by any request,
   # keeps one connection per fiber
   def redis_initialize
-    @redis_server ||= EM::Hiredis.connect("redis://127.0.0.1:6379")
+    redis_config = 'redis://' + Settings.redis.host + ':' + Settings.redis.port
+    @redis_server ||= EM::Hiredis.connect(redis_config)
 
   end
 

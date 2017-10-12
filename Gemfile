@@ -7,6 +7,8 @@ gem 'sinatra'
 gem 'thin'
 gem 'pry'
 gem 'yab62'
+gem 'em-synchrony'
+gem 'config'
 
 group :test do
   gem 'faker'
