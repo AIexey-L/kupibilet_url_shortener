@@ -7,10 +7,11 @@ require 'sinatra/base'
 require 'pry'
 require './lib/em-synchrony' # https://github.com/igrigorik/em-synchrony
 require './services/shorter'
-require './services/redisrepo'
 require 'digest'
+#require 'config'
 
 def run(opts)
+  #Config.load_and_set settings("./config/config.yml")
   EM.run do
     # define some defaults for our app
     server  = opts[:server] || 'thin'
@@ -41,6 +42,8 @@ end
 
 class ShortenApp < Sinatra::Base
   register Sinatra::Async
+  #register Config
+  set :root, File.dirname(__FILE__)
   configure do
     # threaded - False: Will take requests on the reactor thread
     set :threaded, false
@@ -48,12 +51,13 @@ class ShortenApp < Sinatra::Base
 
   # Uses sinatra/async
   apost '/' do
+    aparams = eval(request.body.read)
     redis_initialize
     content_type :json
     response = if aparams[:longUrl] && valid_url?(aparams[:longUrl])
-                 return_short_url(aparams[:longUrl])
+                 fetch_short_url(aparams[:longUrl])
                else
-                 { message: 'url is missing'}
+                 { message: 'url is missing or invalid'}
                end
     body response.to_json
   end
@@ -62,6 +66,7 @@ class ShortenApp < Sinatra::Base
   # async flow pauses for current fiber for redis request,
   # other fibers remain async.
   aget '/:url' do
+    aparams = eval(request.body.read)
     redis_initialize
     EM.synchrony do
       if aparams[:url]
@@ -83,12 +88,12 @@ class ShortenApp < Sinatra::Base
   # Initializes redis first time by any request,
   # keeps one connection per fiber
   def redis_initialize
-    @redis_server ||= RedisRepo.new.redis_server
+    @redis_server ||= EM::Hiredis.connect("redis://127.0.0.1:6379")
+
   end
 
-  def return_short_url(long_url)
+  def fetch_short_url(long_url)
     shorty = Shorter.make_short_url(long_url)
-    @redis_server.set(long_url, shorty)
     @redis_server.set(shorty, long_url)
     { url: shorty }
   end
