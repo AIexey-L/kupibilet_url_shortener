@@ -1,0 +1,9 @@
+  webserver_config:
+    server: 'thin'
+    host: '127.0.0.1'
+    port:  '8181'
+    web_app: 'ShortenApp' 
+
+  redis:
+    host: '127.0.0.1'
+    port: '6379'
