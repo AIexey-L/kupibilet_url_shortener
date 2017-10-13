@@ -14,7 +14,7 @@ set :root, File.dirname(__FILE__)
 
 def run(opts)
   EM.run do
-    # define some defaults for our app in config.yml
+    # Define some defaults for our app in config.yml
     config = Settings.webserver_config
     server  = opts[:server] || config.server
     host    = opts[:host]   || config.host
@@ -68,7 +68,6 @@ class ShortenApp < Sinatra::Base
   # async flow pauses for current fiber for redis request,
   # other fibers remain async.
   aget '/:url' do
-    aparams = eval(request.body.read)
     redis_initialize
     EM.synchrony do
       if aparams[:url]
@@ -96,9 +95,9 @@ class ShortenApp < Sinatra::Base
   end
 
   def fetch_short_url(long_url)
-    shorty = Shorter.make_short_url(long_url)
-    @redis_server.set(shorty, long_url)
-    { url: shorty }
+    code = Shorter.make_short_url(long_url)
+    @redis_server.set(code, long_url)
+    { url: "#{Shorter.assemble_short_url(code)}" }
   end
 
   def valid_url?(url)
