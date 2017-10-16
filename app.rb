@@ -9,6 +9,7 @@ require 'em-synchrony'
 require './services/shorter'
 require 'digest'
 require 'config'
+require 'rack'
 
 set :root, File.dirname(__FILE__)
 
@@ -53,11 +54,11 @@ class ShortenApp < Sinatra::Base
 
   # Uses sinatra/async
   apost '/' do
-    aparams = eval(request.body.read)
+    aparams = JSON.parse(env['rack.input'].read)
     redis_initialize
     content_type :json
-    response = if aparams[:longUrl] && valid_url?(aparams[:longUrl])
-                 fetch_short_url(aparams[:longUrl])
+    response = if aparams['longUrl'] && valid_url?(aparams['longUrl'])
+                 fetch_short_url(aparams['longUrl'])
                else
                  { message: 'url is missing or invalid'}
                end

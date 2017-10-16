@@ -9,6 +9,7 @@ gem 'pry'
 gem 'yab62'
 gem 'em-synchrony'
 gem 'config'
+gem 'rack-contrib'
 
 group :test do
   gem 'faker'

@@ -63,6 +63,8 @@ GEM
       coderay (~> 1.1.0)
       method_source (~> 0.9.0)
     rack (2.0.3)
+    rack-contrib (1.2.0)
+      rack (>= 0.9.1)
     rack-protection (2.0.0)
       rack
     rack-test (0.7.0)
@@ -106,6 +108,7 @@ DEPENDENCIES
   eventmachine
   faker
   pry
+  rack-contrib
   rack-test
   rspec
   sinatra
